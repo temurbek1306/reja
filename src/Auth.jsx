@@ -6,7 +6,7 @@ export default function Auth({ onLogin }) {
     const [isShaking, setIsShaking] = useState(false);
 
     // SHA-256 hash of '6005'
-    const PASSWORD_HASH = '65bf34b1e572ae42dfd62ca7f830c86fd996ee44880dfd9667b7fba6a94d23b34';
+    const PASSWORD_HASH = '65bf34b1e572ae42dfd62ca7f830c86fd996ee44880dfd967b7fba6a94d23b34';
 
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
