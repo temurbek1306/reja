@@ -5,9 +5,21 @@ export default function Auth({ onLogin }) {
     const [error, setError] = useState('');
     const [isShaking, setIsShaking] = useState(false);
 
-    const handleLogin = (e) => {
+    // SHA-256 hash of '6005'
+    const PASSWORD_HASH = '65bf34b1e572ae42dfd62ca7f830c86fd996ee44880dfd9667b7fba6a94d23b34';
+
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (password === '6005') {
+        const enteredHash = await sha256(password);
+
+        if (enteredHash === PASSWORD_HASH) {
             onLogin();
         } else {
             setError("Noto'g'ri parol! Iltimos, qaytadan urinib ko'ring.");
@@ -32,7 +44,7 @@ export default function Auth({ onLogin }) {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Parol (7777)"
+                        placeholder="Parolni kiriting..."
                         autoFocus
                         className="auth-input"
                     />

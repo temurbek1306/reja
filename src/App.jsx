@@ -115,7 +115,7 @@ export default function App() {
   const [editTaskId, setEditTaskId] = useState(null);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
-  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('reja_auth') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('_usr_session_active') === 'true');
 
   // Sync Timer Logic
   useEffect(() => {
@@ -145,7 +145,7 @@ export default function App() {
   }, [timerStartTime]);
   useEffect(() => { localStorage.setItem('reja_v9_timer_accum', accumulatedSecs.toString()); }, [accumulatedSecs]);
   useEffect(() => { localStorage.setItem('reja_v9_last_date', lastDate); }, [lastDate]);
-  useEffect(() => { localStorage.setItem('reja_auth', isAuthenticated); }, [isAuthenticated]);
+  useEffect(() => { localStorage.setItem('_usr_session_active', isAuthenticated); }, [isAuthenticated]);
 
   // Day Change Auto-Switch Logic
   useEffect(() => {
