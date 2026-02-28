@@ -89,9 +89,13 @@ export default function App() {
 
   // Persistent States
   const [tasks, setTasks] = useState(() => {
+    const progSaved = JSON.parse(localStorage.getItem('reja_v9_prog') || '{}');
+    const hasProgress = Object.values(progSaved).some(v => v > 0);
+    if (!hasProgress) return getTasksForDay(new Date().getDay());
+
     const saved = localStorage.getItem('reja_v9_tasks');
     if (saved) return JSON.parse(saved);
-    return getTasksForDay(now.getDay());
+    return getTasksForDay(new Date().getDay());
   });
   const [prog, setProg] = useState(() => JSON.parse(localStorage.getItem('reja_v9_prog')) || {});
   const [xp, setXp] = useState(() => parseInt(localStorage.getItem('reja_v9_xp')) || 0);
