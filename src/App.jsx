@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Auth from './Auth';
 
 const WEEKDAY_TASKS = [
   { id: '1', icon: '🍳', label: 'Nonushta', norm: 20, color: '#fbbf24' },
@@ -112,7 +113,9 @@ export default function App() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(BLANK);
   const [editTaskId, setEditTaskId] = useState(null);
+  const [activeTaskId, setActiveTaskId] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('reja_auth') === 'true');
 
   // Sync Timer Logic
   useEffect(() => {
@@ -142,6 +145,7 @@ export default function App() {
   }, [timerStartTime]);
   useEffect(() => { localStorage.setItem('reja_v9_timer_accum', accumulatedSecs.toString()); }, [accumulatedSecs]);
   useEffect(() => { localStorage.setItem('reja_v9_last_date', lastDate); }, [lastDate]);
+  useEffect(() => { localStorage.setItem('reja_auth', isAuthenticated); }, [isAuthenticated]);
 
   // Day Change Auto-Switch Logic
   useEffect(() => {
@@ -273,8 +277,9 @@ export default function App() {
 
   return (
     <>
+      {!isAuthenticated && <Auth onLogin={() => setIsAuthenticated(true)} />}
       <div className="aurora-bg"></div>
-      <div className="dashboard-layout">
+      <div className="dashboard-layout" style={{ display: isAuthenticated ? 'flex' : 'none' }}>
         <aside className="sidebar root-card">
           <div className="brand"><div className="brand-logo">🔹</div><h1>Reja</h1></div>
 
