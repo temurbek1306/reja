@@ -23,10 +23,18 @@ const MOTIV = [
   "Har bir daqiqa qimmatli. 🏆",
 ];
 
+const UZ_MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr"];
+const UZ_DAYS = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"];
+const UZ_DAYS_SHORT = ["yak", "dush", "sesh", "chor", "pay", "jum", "shan"];
+
 function fmt(m) {
-  if (!m || m < 0) return '0m';
+  if (!m || m <= 0) return '0 min';
   const h = Math.floor(m / 60), min = m % 60;
-  return h > 0 ? `${h}s ${min}m` : `${min}m`;
+  if (h > 0) {
+    if (min === 0) return `${h} soat`;
+    return `${h} soat ${min.toString().padStart(2, '0')} min`;
+  }
+  return `${min} min`;
 }
 
 function fmtTimer(seconds) {
@@ -74,97 +82,58 @@ export default function App() {
   const [editTaskId, setEditTaskId] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
 
-  const timerRef = useRef(null);
-
-  // Sync to LocalStorage
-  useEffect(() => { localStorage.setItem('reja_v9_tasks', JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem('reja_v9_prog', JSON.stringify(prog)); }, [prog]);
-  useEffect(() => { localStorage.setItem('reja_v9_xp', xp.toString()); }, [xp]);
-  useEffect(() => { localStorage.setItem('reja_v9_history', JSON.stringify(history)); }, [history]);
-
-  useEffect(() => {
-    if (activeTimerTask) localStorage.setItem('reja_v9_timer_task', activeTimerTask);
-    else localStorage.removeItem('reja_v9_timer_task');
-  }, [activeTimerTask]);
-
-  useEffect(() => {
-    if (timerStartTime) localStorage.setItem('reja_v9_timer_start', timerStartTime.toString());
-    else localStorage.removeItem('reja_v9_timer_start');
-  }, [timerStartTime]);
-
-  useEffect(() => { localStorage.setItem('reja_v9_timer_accum', accumulatedSecs.toString()); }, [accumulatedSecs]);
-
   // Sync Timer Logic
   useEffect(() => {
     const update = () => {
       if (timerStartTime) {
         const diff = Math.floor((Date.now() - timerStartTime) / 1000);
         setElapsedSecs(accumulatedSecs + diff);
-      } else {
-        setElapsedSecs(accumulatedSecs);
-      }
+      } else setElapsedSecs(accumulatedSecs);
     };
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [timerStartTime, accumulatedSecs]);
 
-  // Handle task change
+  // Sync to LocalStorage
+  useEffect(() => { localStorage.setItem('reja_v9_tasks', JSON.stringify(tasks)); }, [tasks]);
+  useEffect(() => { localStorage.setItem('reja_v9_prog', JSON.stringify(prog)); }, [prog]);
+  useEffect(() => { localStorage.setItem('reja_v9_xp', xp.toString()); }, [xp]);
+  useEffect(() => { localStorage.setItem('reja_v9_history', JSON.stringify(history)); }, [history]);
   useEffect(() => {
-    if (cur !== activeTimerTask) {
-      if (timerStartTime) {
-        // Automatically save if switching task? Or just stop? 
-        // Better: Reset UI elapsed but keep background logic tied to activeTimerTask.
-        // For simplicity: If we click a new task while another is running, we stop the old one.
-        stopTimer(false);
-      }
-      setElapsedSecs(0);
-      setAccumulatedSecs(0);
-    }
-  }, [cur]);
+    if (activeTimerTask) localStorage.setItem('reja_v9_timer_task', activeTimerTask);
+    else localStorage.removeItem('reja_v9_timer_task');
+  }, [activeTimerTask]);
+  useEffect(() => {
+    if (timerStartTime) localStorage.setItem('reja_v9_timer_start', timerStartTime.toString());
+    else localStorage.removeItem('reja_v9_timer_start');
+  }, [timerStartTime]);
+  useEffect(() => { localStorage.setItem('reja_v9_timer_accum', accumulatedSecs.toString()); }, [accumulatedSecs]);
 
-  function startTimer() {
-    setTimerStartTime(Date.now());
-    setActiveTimerTask(cur);
-  }
-
-  function pauseTimer() {
-    if (timerStartTime) {
-      const diff = Math.floor((Date.now() - timerStartTime) / 1000);
-      setAccumulatedSecs(prev => prev + diff);
-      setTimerStartTime(null);
-    }
-  }
-
-  function stopTimer(save = true) {
-    if (save && elapsedSecs > 0 && activeTimerTask) {
-      addTime(activeTimerTask, Math.ceil(elapsedSecs / 60));
-    }
-    setTimerStartTime(null);
-    setAccumulatedSecs(0);
-    setElapsedSecs(0);
-    setActiveTimerTask(null);
-  }
-
-  const UZ_MONTHS = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
-  const UZ_DAYS_SHORT = ["Yak", "Dush", "Sesh", "Chor", "Pay", "Juma", "Shan"];
-
+  // Date & Countdown Calculations
   const year = now.getFullYear();
-  const month = now.getMonth();
+  const monthIdx = now.getMonth();
   const dateNum = now.getDate();
-  const day = now.getDay();
-  const dateStr = `${year} M${(month + 1).toString().padStart(2, '0')} ${dateNum}, ${UZ_DAYS_SHORT[day]}`;
-  const clockStr = now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-  const motivIdx = Math.floor((now.getMinutes() / 10)) % MOTIV.length;
+  const dayIdx = now.getDay();
 
-  const endOfDay = new Date(year, month, dateNum, 23, 59, 59);
-  const hoursLeftDay = Math.floor((endOfDay - now) / (1000 * 60 * 60));
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysLeftMonth = daysInMonth - dateNum;
+  const dateStr = `${dateNum}-${UZ_MONTHS[monthIdx]}, ${UZ_DAYS[dayIdx]}`;
+  const clockStr = now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  // Countdowns
+  const endOfDay = new Date(year, monthIdx, dateNum, 23, 59, 59);
+  const diffDay = endOfDay - now;
+  const hLeft = Math.floor(diffDay / (1000 * 60 * 60));
+  const mLeft = Math.floor((diffDay % (1000 * 60 * 60)) / (1000 * 60));
+
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const dLeftMonth = daysInMonth - dateNum;
+
   const endOfYear = new Date(year, 11, 31, 23, 59, 59);
-  const daysLeftYear = Math.floor((endOfYear - now) / (1000 * 60 * 60 * 24));
-  const daysLeftWeek = day === 0 ? 0 : 7 - day;
+  const dLeftYear = Math.floor((endOfYear - now) / (1000 * 60 * 60 * 24));
 
+  const dLeftWeek = dayIdx === 0 ? 0 : 7 - dayIdx;
+
+  // Stats
   const level = Math.floor(xp / 1000) + 1;
   const currentLevelXp = xp % 1000;
   const levelPct = (currentLevelXp / 1000) * 100;
@@ -186,8 +155,9 @@ export default function App() {
       if (cur === activeTimerTask) stopTimer(false);
       setTimeout(() => setCur(null), 1500);
     }
-  }, [prog, selectedTask]);
+  }, [prog, selectedTask, cur]);
 
+  // Handlers
   function addTime(id, mins) {
     if (!id) return;
     const task = tasks.find(t => t.id === id);
@@ -201,6 +171,19 @@ export default function App() {
     });
   }
 
+  function startTimer() { setTimerStartTime(Date.now()); setActiveTimerTask(cur); }
+  function pauseTimer() {
+    if (timerStartTime) {
+      const diff = Math.floor((Date.now() - timerStartTime) / 1000);
+      setAccumulatedSecs(prev => prev + diff);
+      setTimerStartTime(null);
+    }
+  }
+  function stopTimer(save = true) {
+    if (save && elapsedSecs > 0 && activeTimerTask) addTime(activeTimerTask, Math.ceil(elapsedSecs / 60));
+    setTimerStartTime(null); setAccumulatedSecs(0); setElapsedSecs(0); setActiveTimerTask(null);
+  }
+
   function undoLastAction() {
     if (history.length === 0) return;
     const lastAction = history[history.length - 1];
@@ -210,7 +193,7 @@ export default function App() {
   }
 
   function resetDay() {
-    if (window.confirm("Barcha bugungi natijalar o'chiriladi?")) {
+    if (window.confirm("Barcha bugungi natijalar o'chiriladi. Rozimisiz?")) {
       setProg({}); setCur(null); setHistory([]); setTimerStartTime(null); setAccumulatedSecs(0); setActiveTimerTask(null);
     }
   }
@@ -227,40 +210,20 @@ export default function App() {
     setForm(BLANK);
   }
 
-  function startEdit(task) {
-    setForm({ label: task.label, icon: task.icon, norm: task.norm, color: task.color });
-    setEditTaskId(task.id);
-    setOpen(true);
-  }
-
-  function cancelEdit() { setForm(BLANK); setEditTaskId(null); }
-
+  function startEdit(task) { setForm(task); setEditTaskId(task.id); setOpen(true); }
+  function deleteTask(id) { if (window.confirm("O'chirilsinmi?")) setTasks(t => t.filter(x => x.id !== id)); }
   function moveTask(index, dir) {
-    const newIndex = index + dir;
-    if (newIndex < 0 || newIndex >= tasks.length) return;
-    setTasks(t => {
-      const arr = [...t];
-      [arr[index], arr[newIndex]] = [arr[newIndex], arr[index]];
-      return arr;
-    });
-  }
-
-  function deleteTask(id) {
-    setTasks(t => t.filter(x => x.id !== id));
-    if (cur === id) setCur(null);
-    if (editTaskId === id) cancelEdit();
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= tasks.length) return;
+    setTasks(t => { const arr = [...t];[arr[index], arr[newIdx]] = [arr[newIdx], arr[index]]; return arr; });
   }
 
   return (
     <>
       <div className="aurora-bg"></div>
-
       <div className="dashboard-layout">
         <aside className="sidebar root-card">
-          <div className="brand">
-            <div className="brand-logo">🔹</div>
-            <h1>Reja</h1>
-          </div>
+          <div className="brand"><div className="brand-logo">🔹</div><h1>Reja</h1></div>
 
           <div className="sidebar-group">
             <h5 className="group-title">Profilingiz</h5>
@@ -268,7 +231,10 @@ export default function App() {
             <div className="xp-bar-wrap">
               <div className="xp-bar-fill" style={{ width: `${levelPct}%` }} />
             </div>
-            <div className="xp-text-large">{currentLevelXp} / 1000 XP</div>
+            <div className="xp-text-large">
+              <span>{currentLevelXp} XP</span>
+              <span>1000 XP gacha</span>
+            </div>
           </div>
 
           <div className="sidebar-group">
@@ -276,84 +242,71 @@ export default function App() {
             <div className="sidebar-time">{clockStr}</div>
             <div className="sidebar-date">{dateStr}</div>
             <div className="countdown-mini">
-              <div className="cd-item"><span>Kun</span> <span>{hoursLeftDay} soat</span></div>
-              <div className="cd-item"><span>Hafta</span> <span>{daysLeftWeek} kun</span></div>
-              <div className="cd-item"><span>Oy</span> <span>{daysLeftMonth} kun</span></div>
-              <div className="cd-item"><span>Yil</span> <span>{daysLeftYear} kun</span></div>
+              <div className="cd-item" title="Kun tugashiga">
+                <span className="cd-icon">☀️</span>
+                <span className="cd-label">Kun yakuniga</span>
+                <span className="cd-val">{hLeft} soat {mLeft} min</span>
+              </div>
+              <div className="cd-item" title="Hafta tugashiga">
+                <span className="cd-icon">📅</span>
+                <span className="cd-label">Hafta yakuniga</span>
+                <span className="cd-val">{dLeftWeek} kun</span>
+              </div>
+              <div className="cd-item" title="Oy tugashiga">
+                <span className="cd-icon">🌙</span>
+                <span className="cd-label">Oy yakuniga</span>
+                <span className="cd-val">{dLeftMonth} kun</span>
+              </div>
+              <div className="cd-item" title="Yil tugashiga">
+                <span className="cd-icon">🚀</span>
+                <span className="cd-label">Yil yakuniga</span>
+                <span className="cd-val">{dLeftYear} kun</span>
+              </div>
             </div>
           </div>
 
           <div className="sidebar-actions">
-            <button className="btn-secondary w-100" style={{ padding: '12px', marginBottom: '8px' }} onClick={() => setOpen(true)}>
-              ⚙️ Sozlamalar
-            </button>
-            <button className="btn-undo-full" style={{ marginTop: 0 }} onClick={resetDay}>Kunni tozalash</button>
+            <button className="btn-vivid btn-secondary w-100" onClick={() => setOpen(true)}>⚙️ Sozlamalar</button>
+            <button className="btn-undo-full" onClick={resetDay}>Kunni tozalash</button>
           </div>
         </aside>
 
         <main className={`main-content ${activeTab}-active`}>
-          <nav className="mobile-nav">
-            <button className={activeTab === 'home' ? 'active' : ''} onClick={() => setActiveTab('home')}>
-              <span className="nav-icon">🏠</span><span className="nav-label">Asosiy</span>
-            </button>
-            <button className={activeTab === 'missions' ? 'active' : ''} onClick={() => setActiveTab('missions')}>
-              <span className="nav-icon">📁</span><span className="nav-label">Missiyalar</span>
-            </button>
-            <button className={activeTab === 'stats' ? 'active' : ''} onClick={() => setActiveTab('stats')}>
-              <span className="nav-icon">📊</span><span className="nav-label">Statistika</span>
-            </button>
-            <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>
-              <span className="nav-icon">⚙️</span><span className="nav-label">Sozlamalar</span>
-            </button>
-          </nav>
-
           {(!isMobile || activeTab === 'home') && (
             <div className="tab-pane">
               <header className="content-header">
-                <div className="motiv-plate">{MOTIV[motivIdx]}</div>
+                {isMobile && (
+                  <div className="mobile-time-date-wrap">
+                    <div className="sidebar-time">{clockStr}</div>
+                    <div className="sidebar-date">{dateStr}</div>
+                  </div>
+                )}
+                <div className="motiv-plate">{MOTIV[Math.floor(now.getMinutes() / 12) % MOTIV.length]}</div>
                 {history.length > 0 && <button className="btn-undo-top" onClick={undoLastAction}>↶ Bekor qilish</button>}
               </header>
 
               <section className="stats-board">
-                {[
-                  { label: 'Jami XP', value: xp, cls: 'vivid-purple' },
-                  { label: 'Bajarildi', value: fmt(totalDone), cls: 'vivid-green' },
-                  { label: 'Qoldi', value: fmt(remaining), cls: 'vivid-blue' },
-                  { label: 'Vazifalar', value: `${completedTasks.length}/${tasks.length}`, cls: 'vivid-orange' },
-                ].map(s => (
-                  <div className="stat-card root-card" key={s.label}>
-                    <div className="stat-label">{s.label}</div>
-                    <div className={`stat-value ${s.cls}`}>{s.value}</div>
-                  </div>
-                ))}
+                <div className="stat-card root-card"><div className="stat-label">Jami XP</div><div className="stat-value vivid-purple">{xp}</div></div>
+                <div className="stat-card root-card"><div className="stat-label">Bajarildi</div><div className="stat-value vivid-green">{fmt(totalDone)}</div></div>
+                <div className="stat-card root-card"><div className="stat-label">Qoldi</div><div className="stat-value vivid-blue">{fmt(remaining)}</div></div>
+                <div className="stat-card root-card"><div className="stat-label">Missiyalar</div><div className="stat-value vivid-orange">{completedTasks.length}/{tasks.length}</div></div>
               </section>
 
-              {isAllDone ? (
-                <div className="day-fin root-card">
-                  <span className="trophy">🏆</span>
-                  <h2>Kun yopildi!</h2>
-                  <p>Barcha normativlar bajarildi.</p>
-                  <button className="btn-primary-vivid" onClick={resetDay}>Yangi kunni boshlash</button>
-                </div>
-              ) : (
-                <div className="task-workspace">
+              <div className="split-view">
+                <div className="split-left">
                   {selectedTask ? (
-                    <div className="active-widget root-card" style={{ '--node-color': selectedTask.color }}>
+                    <div className="active-widget root-card">
                       <div className="widget-header">
-                        <span className="badge-vivid">
-                          {activeTimerTask === selectedTask.id && timerStartTime ? '🔴 Jonli Jarayon' : 'Faol Missiya'}
-                        </span>
+                        <span className="badge-vivid">{timerStartTime ? '🔴 JONLI' : 'FAOL'}</span>
                         <button className="btn-close-vivid" onClick={() => setCur(null)}>✕</button>
                       </div>
                       <div className="widget-body">
                         <div className="widget-left">
                           <div className="widget-icon-vivid" style={{ color: selectedTask.color }}>{selectedTask.icon}</div>
                           <div className="widget-info">
-                            <h2 className="widget-title" style={{ color: selectedTask.color }}>{selectedTask.label}</h2>
+                            <h2 className="widget-title">{selectedTask.label}</h2>
                             <div className="widget-prog-text">{fmt(selectedProg)} / {fmt(selectedTask.norm)}</div>
-                            <div className="widget-prog-bar-vivid">
-                              <div className="widget-prog-fill-vivid" style={{ width: `${selectedPct}%`, background: selectedTask.color }} />
-                            </div>
+                            <div className="widget-prog-bar-vivid"><div className="widget-prog-fill-vivid" style={{ width: `${selectedPct}%`, background: selectedTask.color }} /></div>
                           </div>
                         </div>
                         <div className="widget-right">
@@ -364,12 +317,7 @@ export default function App() {
                             ) : (
                               <button className="btn-vivid btn-pause" onClick={pauseTimer}>⏸ To'xtash</button>
                             )}
-                            {elapsedSecs > 0 && (
-                              <>
-                                <button className="btn-vivid btn-save" onClick={() => stopTimer(true)}>✓ Saqlash</button>
-                                <button className="btn-vivid btn-cancel" onClick={() => stopTimer(false)}>✕ Bekor</button>
-                              </>
-                            )}
+                            <button className="btn-vivid btn-save" onClick={() => stopTimer(true)}>✓ Saqlash</button>
                           </div>
                         </div>
                       </div>
@@ -378,44 +326,94 @@ export default function App() {
                     <div className="empty-widget-vivid">
                       <div className="icon-xl">🎯</div>
                       <h3>Vazifa tanlanmagan</h3>
-                      <p>Missiyalar bo'limidan bittasini tanlang.</p>
+                      <p>Pastki menyudan missiya tanlang.</p>
                     </div>
                   )}
                 </div>
-              )}
+
+                {!isMobile && (
+                  <div className="split-right">
+                    <h3 className="section-title">Missiyalar</h3>
+                    <div className="missions-grid-vivid">
+                      {activeTasks.map(t => (
+                        <div key={t.id} className={`mission-card-vivid ${cur === t.id ? 'active' : ''}`} onClick={() => setCur(t.id)}>
+                          <div className="mc-icon-vivid" style={{ color: t.color }}>{t.icon}</div>
+                          <div className="mc-info">
+                            <h4>{t.label}</h4>
+                            <div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {activeTasks.length === 0 && <div className="day-fin root-card" style={{ padding: '20px' }}>🏆 Hamma vazifa bajarildi!</div>}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {(!isMobile || activeTab === 'missions') && (activeTab === 'missions' || !isMobile) && (
+          {isMobile && activeTab === 'missions' && (
             <div className="tab-pane">
-              <h3 className="section-title">Ochiq missiyalar</h3>
+              <h3 className="section-title">Missiyalar</h3>
               <div className="missions-grid-vivid">
-                {activeTasks.filter(t => t.id !== cur).map(task => (
-                  <div key={task.id} className="mission-card-vivid" onClick={() => { setCur(task.id); if (isMobile) setActiveTab('home'); }}>
-                    <div className="mc-icon-vivid" style={{ color: task.color }}>{task.icon}</div>
-                    <div className="mc-info">
-                      <h4>{task.label}</h4>
-                      <div className="mc-meta">{fmt(prog[task.id] || 0)} / {fmt(task.norm)} <span className="mc-xp">+{task.norm * 10} XP</span></div>
-                    </div>
+                {activeTasks.map(t => (
+                  <div key={t.id} className="mission-card-vivid" onClick={() => { setCur(t.id); setActiveTab('home'); }}>
+                    <div className="mc-icon-vivid" style={{ color: t.color }}>{t.icon}</div>
+                    <div className="mc-info"><h4>{t.label}</h4><div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {(!isMobile || activeTab === 'stats') && (activeTab === 'stats' || !isMobile) && (
+          {isMobile && activeTab === 'stats' && (
             <div className="tab-pane">
               <h3 className="section-title">Statistika</h3>
+
+              <div className="mobile-profile-card root-card">
+                <h5 className="group-title">Profilingiz</h5>
+                <div className="level-badge-large">LVL {level}</div>
+                <div className="xp-bar-wrap">
+                  <div className="xp-bar-fill" style={{ width: `${levelPct}%` }} />
+                </div>
+                <div className="xp-text-large">
+                  <span>{currentLevelXp} XP</span>
+                  <span>1000 XP gacha</span>
+                </div>
+              </div>
+
+              <div className="mobile-time-card root-card">
+                <h5 className="group-title">Vaqt ko'rsatkichlari</h5>
+                <div className="countdown-mini">
+                  <div className="cd-item">
+                    <span className="cd-icon">☀️</span>
+                    <span className="cd-label">Kun yakuniga</span>
+                    <span className="cd-val">{hLeft} soat {mLeft} min</span>
+                  </div>
+                  <div className="cd-item">
+                    <span className="cd-icon">📅</span>
+                    <span className="cd-label">Hafta yakuniga</span>
+                    <span className="cd-val">{dLeftWeek} kun</span>
+                  </div>
+                  <div className="cd-item">
+                    <span className="cd-icon">🌙</span>
+                    <span className="cd-label">Oy yakuniga</span>
+                    <span className="cd-val">{dLeftMonth} kun</span>
+                  </div>
+                  <div className="cd-item">
+                    <span className="cd-icon">🚀</span>
+                    <span className="cd-label">Yil yakuniga</span>
+                    <span className="cd-val">{dLeftYear} kun</span>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="section-title" style={{ marginTop: '32px' }}>Missiyalar hisoboti</h3>
               <div className="stats-list-vivid">
-                {tasks.map(task => (
-                  <div key={task.id} className="stat-row-vivid">
-                    <div className="sr-icon-vivid">{task.icon}</div>
-                    <div className="sr-info">
-                      <h4>{task.label}</h4>
-                      <div className={`sr-status ${(prog[task.id] || 0) >= task.norm ? 'status-done-vivid' : 'status-pending-vivid'}`}>
-                        {(prog[task.id] || 0) >= task.norm ? 'Bajarildi' : `${fmt(prog[task.id] || 0)} / ${fmt(task.norm)}`}
-                      </div>
-                    </div>
+                {tasks.map(t => (
+                  <div key={t.id} className="stat-row-vivid">
+                    <div className="sr-icon-vivid">{t.icon}</div>
+                    <div className="sr-info"><h4>{t.label}</h4><div className="sr-status">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div></div>
                   </div>
                 ))}
               </div>
@@ -425,62 +423,54 @@ export default function App() {
           {isMobile && activeTab === 'settings' && (
             <div className="tab-pane">
               <h3 className="section-title">Sozlamalar</h3>
-              <button className="btn-vivid btn-secondary w-100" style={{ marginBottom: '12px' }} onClick={() => setOpen(true)}>⚙️ Missiyalarni boshqarish</button>
-              <button className="btn-undo-full" onClick={resetDay}>Kunni qayta boshlash</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <button className="btn-vivid btn-secondary w-100" onClick={() => setOpen(true)}>⚙️ Missiyalarni boshqarish</button>
+                <button className="btn-undo-full w-100" onClick={resetDay}>Kunni tozalash</button>
+              </div>
             </div>
           )}
         </main>
+
+        <nav className="mobile-nav">
+          <button className={activeTab === 'home' ? 'active' : ''} onClick={() => { setActiveTab('home'); setOpen(false); }}>🏠<span>Asosiy</span></button>
+          <button className={activeTab === 'missions' ? 'active' : ''} onClick={() => { setActiveTab('missions'); setOpen(false); }}>📁<span>Missiyalar</span></button>
+          <button className={activeTab === 'stats' ? 'active' : ''} onClick={() => { setActiveTab('stats'); setOpen(false); }}>📊<span>Statistika</span></button>
+          <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => { setActiveTab('settings'); setOpen(false); }}>⚙️<span>Sozlamalar</span></button>
+        </nav>
       </div>
 
       {open && (
         <div className="overlay" onClick={() => setOpen(false)}>
           <div className="drawer" onClick={e => e.stopPropagation()}>
-            <div className="drawer-header">
-              <h2 className="drawer-title">Sozlamalar</h2>
-              <button className="drawer-close" onClick={() => setOpen(false)}>✕</button>
-            </div>
+            <div className="drawer-header"><h2 className="drawer-title">Sozlamalar</h2><button className="drawer-close" onClick={() => setOpen(false)}>✕</button></div>
             <div className="drawer-content">
-              <section className="form-section">
-                <h5 className="section-label">{editTaskId ? 'Tahrirlash' : 'Yangi qo\'shish'}</h5>
-                <div className="form-card">
-                  <div className="field">
-                    <label>Nomi</label>
-                    <input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} />
-                  </div>
-                  <div className="form-grid">
-                    <div className="field"><label>Icon</label><input value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} /></div>
-                    <div className="field"><label>Daqiqa</label><input type="number" value={form.norm} onChange={e => setForm({ ...form, norm: Number(e.target.value) })} /></div>
-                  </div>
-                  <div className="field">
-                    <label>Rangi</label>
-                    <div className="color-picker">
-                      {COLORS.map(c => <div key={c} className={`color-dot ${form.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} />)}
+              <form className="form-card" onSubmit={addTask}>
+                <div className="field"><label>Nomi</label><input value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} /></div>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="field"><label>Icon</label><input value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} /></div>
+                  <div className="field"><label>Daqiqa</label><input type="number" value={form.norm} onChange={e => setForm({ ...form, norm: parseInt(e.target.value) || 0 })} /></div>
+                </div>
+                <div className="field">
+                  <label>Rangi</label>
+                  <div className="color-picker">{COLORS.map(c => <div key={c} className={`color-dot ${form.color === c ? 'active' : ''}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} />)}</div>
+                </div>
+                <button className="btn-add-task">{editTaskId ? 'Saqlash' : 'Qo\'shish'}</button>
+              </form>
+              <div className="task-list-pro">
+                <h3 className="section-label">Barcha vazifalar</h3>
+                {tasks.map((t, idx) => (
+                  <div key={t.id} className="task-item-pro">
+                    <div className="ti-icon" style={{ color: t.color }}>{t.icon}</div>
+                    <div className="ti-info"><h4>{t.label}</h4><p>{t.norm}m</p></div>
+                    <div className="ti-actions">
+                      <button className="btn-icon-sm" onClick={() => moveTask(idx, -1)}>▲</button>
+                      <button className="btn-icon-sm" onClick={() => moveTask(idx, 1)}>▼</button>
+                      <button className="btn-icon-sm" onClick={() => startEdit(t)}>✏️</button>
+                      <button className="btn-icon-sm btn-delete" onClick={() => deleteTask(t.id)}>✕</button>
                     </div>
                   </div>
-                  <button className="btn-add-task" onClick={addTask}>{editTaskId ? 'Saqlash' : 'Qo\'shish'}</button>
-                  {editTaskId && <button className="btn-cancel" onClick={cancelEdit}>Bekor qilish</button>}
-                </div>
-              </section>
-
-              <section className="form-section">
-                <h5 className="section-label">Barcha Missiyalar ({tasks.length})</h5>
-                <div className="task-list-pro">
-                  {tasks.map((t, idx) => (
-                    <div key={t.id} className="task-item-pro">
-                      <div className="ti-icon" style={{ color: t.color }}>{t.icon}</div>
-                      <div className="ti-info"><h4>{t.label}</h4><p>{t.norm}m</p></div>
-                      <div className="ti-actions">
-                        <div className="order-controls">
-                          <button className="btn-order" onClick={() => moveTask(idx, -1)}>▲</button>
-                          <button className="btn-order" onClick={() => moveTask(idx, 1)}>▼</button>
-                        </div>
-                        <button className="btn-icon-sm" onClick={() => startEdit(t)}>✏️</button>
-                        <button className="btn-icon-sm btn-delete" onClick={() => deleteTask(t.id)}>✕</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                ))}
+              </div>
             </div>
           </div>
         </div>
