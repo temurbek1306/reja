@@ -412,12 +412,19 @@ export default function App() {
 
               <h3 className="section-title" style={{ marginTop: '32px' }}>Missiyalar hisoboti</h3>
               <div className="stats-list-vivid">
-                {tasks.map(t => (
-                  <div key={t.id} className="stat-row-vivid">
-                    <div className="sr-icon-vivid">{t.icon}</div>
-                    <div className="sr-info"><h4>{t.label}</h4><div className="sr-status">{fmt(prog[t.id] || 0)} / {fmt(t.norm * 60)}</div></div>
-                  </div>
-                ))}
+                {tasks.map(t => {
+                  const isDone = (prog[t.id] || 0) >= t.norm * 60;
+                  return (
+                    <div key={t.id} className={`stat-row-vivid ${isDone ? 'completed' : ''}`}>
+                      <div className="sr-icon-vivid">{isDone ? '✅' : t.icon}</div>
+                      <div className="sr-info">
+                        <h4>{t.label}</h4>
+                        <div className="sr-status">{isDone ? 'Muvaffaqiyatli yakunlandi!' : `${fmt(prog[t.id] || 0)} / ${fmt(t.norm * 60)}`}</div>
+                      </div>
+                      {isDone && <div className="completed-badge">BAJARILDI</div>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

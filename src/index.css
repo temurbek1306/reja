@@ -537,6 +537,28 @@ body {
   transform: scale(1.02);
 }
 
+.stat-row-vivid.completed {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.2);
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.05);
+}
+
+.stat-row-vivid.completed .sr-icon-vivid {
+  background: rgba(74, 222, 128, 0.15);
+  box-shadow: inset 0 0 10px rgba(74, 222, 128, 0.2);
+}
+
+.completed-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 900;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
 .sr-icon-vivid {
   font-size: 24px;
   width: 48px;
