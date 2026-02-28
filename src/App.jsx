@@ -142,7 +142,7 @@ export default function App() {
   // Day Change Auto-Switch Logic
   useEffect(() => {
     const todayStr = new Date().toDateString();
-    if (lastDate && lastDate !== todayStr) {
+    if (lastDate !== todayStr) {
       const hasProgress = Object.values(prog).some(v => v > 0);
       if (!hasProgress) {
         setTasks(getTasksForDay(new Date().getDay()));
