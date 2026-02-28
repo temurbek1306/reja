@@ -764,7 +764,7 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
-  z-index: 3000;
+  z-index: 6000;
   display: flex;
   justify-content: flex-end;
 }
@@ -773,8 +773,9 @@ body {
   width: min(100%, 480px);
   height: 100%;
   background: #1c2833;
-  padding: 32px;
+  padding: 32px 32px 100px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .drawer-header {
