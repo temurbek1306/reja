@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_TASKS = [
-  { id: '1', icon: '🍳', label: 'Nonushta', norm: 20, color: '#fbbf24' },
-  { id: '2', icon: '💼', label: 'Ish (1-qism)', norm: 180, color: '#818cf8' },
-  { id: '3', icon: '☕', label: 'Dam olish', norm: 30, color: '#a78bfa' },
-  { id: '4', icon: '🍱', label: 'Tushlik', norm: 45, color: '#f87171' },
-  { id: '5', icon: '💻', label: 'Ish (2-qism)', norm: 180, color: '#818cf8' },
-  { id: '6', icon: '📚', label: "Dars", norm: 90, color: '#34d399' },
-  { id: '7', icon: '🌳', label: "Sayr", norm: 45, color: '#4ade80' },
-  { id: '8', icon: '🍽️', label: 'Kechki ovqat', norm: 45, color: '#f472b6' },
-  { id: '9', icon: '🌙', label: 'Uyqu', norm: 480, color: '#38bdf8' },
+  { id: '1', icon: '🍳', label: 'Nonushta', norm: 30, color: '#fbbf24' },
+  { id: '2', icon: '💻', label: 'Dasturlash (1-bosqich)', norm: 120, color: '#818cf8' },
+  { id: '3', icon: '🏫', label: 'IT Park (Dars o\'tish)', norm: 180, color: '#38bdf8' },
+  { id: '4', icon: '🍱', label: 'Tushlik', norm: 30, color: '#f87171' },
+  { id: '5', icon: '😴', label: 'Dam olish (1-bosqich)', norm: 60, color: '#a78bfa' },
+  { id: '6', icon: '🧼', label: 'Tozalik va tartib', norm: 60, color: '#34d399' },
+  { id: '7', icon: '☕', label: 'Yana dam olish', norm: 60, color: '#fb923c' },
+  { id: '8', icon: '👨‍💻', label: 'Dasturlash (2-bosqich)', norm: 120, color: '#818cf8' },
+  { id: '9', icon: '🇬🇧', label: 'Ingliz tili', norm: 120, color: '#c084fc' },
+  { id: '10', icon: '🏋️', label: 'Mashg\'ulot (Zal)', norm: 60, color: '#4ade80' },
+  { id: '11', icon: '🍿', label: 'Kino va hordiq', norm: 90, color: '#f472b6' },
 ];
 
 const COLORS = ['#818cf8', '#c084fc', '#f87171', '#fb923c', '#fbbf24', '#34d399', '#38bdf8', '#f472b6', '#e879f9', '#a3e635'];
