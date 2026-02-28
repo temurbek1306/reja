@@ -96,6 +96,7 @@ export default function App() {
   const [prog, setProg] = useState(() => JSON.parse(localStorage.getItem('reja_v9_prog')) || {});
   const [xp, setXp] = useState(() => parseInt(localStorage.getItem('reja_v9_xp')) || 0);
   const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('reja_v9_history')) || []);
+  const [lastDate, setLastDate] = useState(() => localStorage.getItem('reja_v9_last_date') || "");
 
   // Persistence for Timer
   const [activeTimerTask, setActiveTimerTask] = useState(() => localStorage.getItem('reja_v9_timer_task'));
@@ -136,6 +137,21 @@ export default function App() {
     else localStorage.removeItem('reja_v9_timer_start');
   }, [timerStartTime]);
   useEffect(() => { localStorage.setItem('reja_v9_timer_accum', accumulatedSecs.toString()); }, [accumulatedSecs]);
+  useEffect(() => { localStorage.setItem('reja_v9_last_date', lastDate); }, [lastDate]);
+
+  // Day Change Auto-Switch Logic
+  useEffect(() => {
+    const todayStr = new Date().toDateString();
+    if (lastDate && lastDate !== todayStr) {
+      const hasProgress = Object.values(prog).some(v => v > 0);
+      if (!hasProgress) {
+        setTasks(getTasksForDay(new Date().getDay()));
+        setProg({});
+        setHistory([]);
+      }
+    }
+    setLastDate(todayStr);
+  }, [lastDate]);
 
   // Date & Countdown Calculations
   const year = now.getFullYear();
