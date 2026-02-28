@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const DEFAULT_TASKS = [
+const WEEKDAY_TASKS = [
+  { id: '1', icon: '🍳', label: 'Nonushta', norm: 20, color: '#fbbf24' },
+  { id: '2', icon: '💼', label: 'Ish (1-qism)', norm: 180, color: '#818cf8' },
+  { id: '3', icon: '☕', label: 'Dam olish', norm: 30, color: '#a78bfa' },
+  { id: '4', icon: '🍱', label: 'Tushlik', norm: 45, color: '#f87171' },
+  { id: '5', icon: '💻', label: 'Ish (2-qism)', norm: 180, color: '#818cf8' },
+  { id: '6', icon: '📚', label: "Dars", norm: 90, color: '#34d399' },
+  { id: '7', icon: '🌳', label: "Sayr", norm: 45, color: '#4ade80' },
+  { id: '8', icon: '🍽️', label: 'Kechki ovqat', norm: 45, color: '#f472b6' },
+  { id: '9', icon: '🌙', label: 'Uyqu', norm: 480, color: '#38bdf8' },
+];
+
+const SUNDAY_TASKS = [
   { id: '1', icon: '🍳', label: 'Nonushta', norm: 30, color: '#fbbf24' },
   { id: '2', icon: '💻', label: 'Dasturlash (1)', norm: 120, color: '#818cf8' },
   { id: '3', icon: '🏫', label: 'IT Park (Dars)', norm: 180, color: '#38bdf8' },
@@ -16,6 +28,10 @@ const DEFAULT_TASKS = [
   { id: '13', icon: '🏋️', label: 'Zal (Mashg\'ulot)', norm: 60, color: '#4ade80' },
   { id: '14', icon: '🍿', label: 'Kino (Hordiq)', norm: 90, color: '#f472b6' },
 ];
+
+function getTasksForDay(dayIdx) {
+  return dayIdx === 0 ? SUNDAY_TASKS : WEEKDAY_TASKS;
+}
 
 const COLORS = ['#818cf8', '#c084fc', '#f87171', '#fb923c', '#fbbf24', '#34d399', '#38bdf8', '#f472b6', '#e879f9', '#a3e635'];
 const BLANK = { icon: '🎯', label: '', norm: 60, color: '#818cf8' };
@@ -72,7 +88,11 @@ export default function App() {
   const isMobile = width <= 900;
 
   // Persistent States
-  const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('reja_v9_tasks')) || DEFAULT_TASKS);
+  const [tasks, setTasks] = useState(() => {
+    const saved = localStorage.getItem('reja_v9_tasks');
+    if (saved) return JSON.parse(saved);
+    return getTasksForDay(now.getDay());
+  });
   const [prog, setProg] = useState(() => JSON.parse(localStorage.getItem('reja_v9_prog')) || {});
   const [xp, setXp] = useState(() => parseInt(localStorage.getItem('reja_v9_xp')) || 0);
   const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('reja_v9_history')) || []);
@@ -207,7 +227,7 @@ export default function App() {
       setTimerStartTime(null);
       setAccumulatedSecs(0);
       setActiveTimerTask(null);
-      setTasks(DEFAULT_TASKS);
+      setTasks(getTasksForDay(new Date().getDay()));
     }
   }
 
