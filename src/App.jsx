@@ -27,14 +27,16 @@ const UZ_MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "
 const UZ_DAYS = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"];
 const UZ_DAYS_SHORT = ["yak", "dush", "sesh", "chor", "pay", "jum", "shan"];
 
-function fmt(m) {
-  if (!m || m <= 0) return '0 min';
-  const h = Math.floor(m / 60), min = m % 60;
+function fmt(s) {
+  if (!s || s <= 0) return '0 min';
+  const totalMins = Math.floor(s / 60);
+  if (totalMins <= 0) return '< 1 min';
+  const h = Math.floor(totalMins / 60), min = totalMins % 60;
   if (h > 0) {
     if (min === 0) return `${h} soat`;
     return `${h} soat ${min.toString().padStart(2, '0')} min`;
   }
-  return `${min} min`;
+  return `${totalMins} min`;
 }
 
 function fmtTimer(seconds) {
@@ -138,36 +140,36 @@ export default function App() {
   const currentLevelXp = xp % 1000;
   const levelPct = (currentLevelXp / 1000) * 100;
 
-  const totalNorm = tasks.reduce((s, t) => s + t.norm, 0);
-  const totalDone = tasks.reduce((s, t) => s + Math.min(prog[t.id] || 0, t.norm), 0);
+  const totalNorm = tasks.reduce((s, t) => s + t.norm * 60, 0);
+  const totalDone = tasks.reduce((s, t) => s + Math.min(prog[t.id] || 0, t.norm * 60), 0);
   const remaining = totalNorm - totalDone;
 
-  const activeTasks = tasks.filter(t => (prog[t.id] || 0) < t.norm);
-  const completedTasks = tasks.filter(t => (prog[t.id] || 0) >= t.norm);
+  const activeTasks = tasks.filter(t => (prog[t.id] || 0) < t.norm * 60);
+  const completedTasks = tasks.filter(t => (prog[t.id] || 0) >= t.norm * 60);
   const isAllDone = activeTasks.length === 0 && tasks.length > 0;
 
   const selectedTask = tasks.find(t => t.id === cur);
   const selectedProg = selectedTask ? (prog[selectedTask.id] || 0) : 0;
-  const selectedPct = selectedTask ? Math.min(100, Math.round((selectedProg / selectedTask.norm) * 100)) : 0;
+  const selectedPct = selectedTask ? Math.min(100, Math.round((selectedProg / (selectedTask.norm * 60)) * 100)) : 0;
 
   useEffect(() => {
-    if (selectedTask && (prog[selectedTask.id] || 0) >= selectedTask.norm) {
+    if (selectedTask && (prog[selectedTask.id] || 0) >= selectedTask.norm * 60) {
       if (cur === activeTimerTask) stopTimer(false);
       setTimeout(() => setCur(null), 1500);
     }
   }, [prog, selectedTask, cur]);
 
   // Handlers
-  function addTime(id, mins) {
+  function addTime(id, secs) {
     if (!id) return;
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     setProg(p => {
       const curr = p[id] || 0;
-      const addedXP = mins * 10;
-      setXp(x => x + addedXP);
-      setHistory(h => [...h, { taskId: id, addedMins: mins, addedXP }]);
-      return { ...p, [id]: curr + mins };
+      const addedXP = Math.floor(secs * (10 / 60)); // 10 XP per minute
+      if (addedXP > 0) setXp(x => x + addedXP);
+      setHistory(h => [...h, { taskId: id, addedSecs: secs, addedXP }]);
+      return { ...p, [id]: curr + secs };
     });
   }
 
@@ -180,14 +182,14 @@ export default function App() {
     }
   }
   function stopTimer(save = true) {
-    if (save && elapsedSecs > 0 && activeTimerTask) addTime(activeTimerTask, Math.ceil(elapsedSecs / 60));
+    if (save && elapsedSecs > 0 && activeTimerTask) addTime(activeTimerTask, elapsedSecs);
     setTimerStartTime(null); setAccumulatedSecs(0); setElapsedSecs(0); setActiveTimerTask(null);
   }
 
   function undoLastAction() {
     if (history.length === 0) return;
     const lastAction = history[history.length - 1];
-    setProg(p => ({ ...p, [lastAction.taskId]: Math.max(0, (p[lastAction.taskId] || 0) - lastAction.addedMins) }));
+    setProg(p => ({ ...p, [lastAction.taskId]: Math.max(0, (p[lastAction.taskId] || 0) - (lastAction.addedSecs || 0)) }));
     setXp(x => Math.max(0, x - lastAction.addedXP));
     setHistory(h => h.slice(0, -1));
   }
@@ -305,7 +307,7 @@ export default function App() {
                           <div className="widget-icon-vivid" style={{ color: selectedTask.color }}>{selectedTask.icon}</div>
                           <div className="widget-info">
                             <h2 className="widget-title">{selectedTask.label}</h2>
-                            <div className="widget-prog-text">{fmt(selectedProg)} / {fmt(selectedTask.norm)}</div>
+                            <div className="widget-prog-text">{fmt(selectedProg)} / {fmt(selectedTask.norm * 60)}</div>
                             <div className="widget-prog-bar-vivid"><div className="widget-prog-fill-vivid" style={{ width: `${selectedPct}%`, background: selectedTask.color }} /></div>
                           </div>
                         </div>
@@ -340,7 +342,7 @@ export default function App() {
                           <div className="mc-icon-vivid" style={{ color: t.color }}>{t.icon}</div>
                           <div className="mc-info">
                             <h4>{t.label}</h4>
-                            <div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div>
+                            <div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm * 60)}</div>
                           </div>
                         </div>
                       ))}
@@ -359,7 +361,7 @@ export default function App() {
                 {activeTasks.map(t => (
                   <div key={t.id} className="mission-card-vivid" onClick={() => { setCur(t.id); setActiveTab('home'); }}>
                     <div className="mc-icon-vivid" style={{ color: t.color }}>{t.icon}</div>
-                    <div className="mc-info"><h4>{t.label}</h4><div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div></div>
+                    <div className="mc-info"><h4>{t.label}</h4><div className="mc-meta">{fmt(prog[t.id] || 0)} / {fmt(t.norm * 60)}</div></div>
                   </div>
                 ))}
               </div>
@@ -413,7 +415,7 @@ export default function App() {
                 {tasks.map(t => (
                   <div key={t.id} className="stat-row-vivid">
                     <div className="sr-icon-vivid">{t.icon}</div>
-                    <div className="sr-info"><h4>{t.label}</h4><div className="sr-status">{fmt(prog[t.id] || 0)} / {fmt(t.norm)}</div></div>
+                    <div className="sr-info"><h4>{t.label}</h4><div className="sr-status">{fmt(prog[t.id] || 0)} / {fmt(t.norm * 60)}</div></div>
                   </div>
                 ))}
               </div>
